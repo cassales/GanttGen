@@ -105,7 +105,7 @@ public class DrawHelper {
         g2d.fillRect(0, 0, width, DEFAULT_HEIGHT);
     }
     
-        DrawHelper(ArrayList<ArrayList<ContainerData>> arrayArrayNodes, String scenario, int LF) {
+    DrawHelper(ArrayList<ArrayList<ContainerData>> arrayArrayNodes, String scenario, int LF) {
         this.arrayROOT = arrayArrayNodes;
         this.scenario = scenario;
         latest_finish = LF;

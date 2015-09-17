@@ -23,6 +23,8 @@ public class GraphicsProgram {
         String f1 = "AssignCut", f2 = "RMCut", name = null;
         ArrayList<Job> allJobsOrdered = new ArrayList<>();
         
+        
+        
         //get all files with .log extension inside the folder
         File[] logFiles = getLogFiles();
         //populate array with all jobs. Will consider each .log file as a job.
