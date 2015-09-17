@@ -5,6 +5,7 @@
  */
 package graphicsprogram;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -84,6 +85,7 @@ public class DrawHelper {
     int width = -1;
     int height = -1;
     boolean verbose = false;
+    boolean compose = false;
 
     DrawHelper(ArrayList<ArrayList<ContainerData>> arrayArrayNodes, String scenario) {
         this.arrayROOT = arrayArrayNodes;
@@ -125,6 +127,27 @@ public class DrawHelper {
         g2d.fillRect(0, 0, width, DEFAULT_HEIGHT);        
     }
     
+        DrawHelper(ArrayList<ArrayList<ContainerData>> arrayArrayNodes, String scenario, int LF, boolean v) {
+        this.arrayROOT = arrayArrayNodes;
+        this.scenario = scenario;
+        latest_finish = LF;
+        verbose = v;
+        
+        // Calculate sizes before constructing the image
+        width = DEFAULT_NAME_SPACE + 4*DEFAULT_HORIZONTAL_SPACE + (latest_finish*PxS);
+        height = 3*DEFAULT_VERTICAL_SPACE + arrayROOT.size()*DEFAULT_HEIGHT_GANTT + MARKER_SPACE_50; //depends on the number of nodes of a given experiment
+        
+        // Constructs a BufferedImage of one of the predefined image types.
+        bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        // Create a graphics which can be used to draw into the buffered image
+        g2d = bufferedImage.createGraphics();
+        
+        // fill all the image with white
+        g2d.setColor(Color.white);
+        g2d.fillRect(0, 0, width, DEFAULT_HEIGHT);        
+    }
+    
     public void drawGantts() {
         //create Gantts
         int i = 0;
@@ -149,9 +172,6 @@ public class DrawHelper {
     private void save(BufferedImage buff) throws IOException {
         //sanity check for the directory
         File dir = new File("gen/");
-        if (!dir.exists()) {
-            dir.mkdir();
-        }
         
         //create and save file
         File file = new File(dir.getPath() + "/" + scenario + ".png");
@@ -258,6 +278,53 @@ public class DrawHelper {
                 drawLine(x+i*PxS, y, x+i*PxS, y+MARKER_SPACE_25, Color.black);
                 drawString(s, x+i*PxS-offset, y + MARKER_SPACE_50 + DEFAULT_VERTICAL_SPACE, Color.black);
             }
+        }
+    }
+    
+    /**
+     * prints the contents of buff2 on buff1 with the given opaque value.
+     *
+     * @param buff1 buffer
+     * @param buff2 buffer
+     * @param opaque how opaque the second buffer should be drawn
+     * @param x x position where the second buffer should be drawn
+     * @param y y position where the second buffer should be drawn
+     */
+    public static void addImage(BufferedImage buff1, BufferedImage buff2, float opaque, int x, int y) {
+        Graphics2D g2d = buff1.createGraphics();
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opaque));
+        g2d.drawImage(buff2, x, y, null);
+        g2d.dispose();
+    }
+
+   /**
+     * returns a BufferedImage from the Image provided.
+     *
+     * @param ref path to image
+     * @return loaded image
+     */
+    public static BufferedImage loadImage(String ref) {
+        BufferedImage b1 = null;
+        try {
+            b1 = ImageIO.read(new File(ref));
+        } catch (IOException e) {
+            System.out.println("error loading the image: " + ref + " : " + e);
+        }
+        return b1;
+    }
+    
+     /**
+     * writes the image in the provided buffer to the destination file.
+     *
+     * @param buff buffer to be saved
+     * @param dest destination to save at
+     */
+    public static void saveImage(BufferedImage buff, String dest) {
+        try {
+            File outputfile = new File(dest);
+            ImageIO.write(buff, "png", outputfile);
+        } catch (IOException e) {
+            System.out.println("error saving the image: " + dest + ": " + e);
         }
     }
 }

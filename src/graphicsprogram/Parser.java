@@ -19,10 +19,9 @@ import java.util.Set;
  *
  * @author cassales
  */
-public class Parser {
-    private static final int NUMBER_OF_REDUCES = 8;
+public class Parser {   
     
-    public static ArrayList<ContainerData> parseFiles(File start, File finish) {
+    public static ArrayList<ContainerData> parseFiles(File start, File finish, int redNumber) {
         ArrayList<ContainerData> ret = new ArrayList<>();
         
         //parse constainers start
@@ -77,7 +76,7 @@ public class Parser {
         
         //normalize times
         ret = Parser.normalize(ret);
-        ret = Parser.removeReducers(ret,NUMBER_OF_REDUCES);
+        ret = Parser.removeReducers(ret,redNumber);
         
         return ret;
     }
@@ -144,7 +143,8 @@ public class Parser {
     static int getLatestFinishTime(ArrayList<Job> arrayROOT) {
         int ret = 0;
         for (Job j : arrayROOT) {
-            for (ContainerData d : j.getJobOrdered()) {
+            ArrayList<ContainerData> AL = j.getJobOrdered();
+            for (ContainerData d : AL) {
                 if (d.getEndTime() > ret)
                     ret = d.getEndTime();
             }
