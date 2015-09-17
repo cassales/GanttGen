@@ -29,7 +29,7 @@ public class DrawHelper {
     public static final int STEP_VERTICAL = 10;
     
     //graph size
-    public static final int LONGEST_END = 790; //longest container, must be calculated/adjusted
+    public static final int LATEST_END = 500; //longest container, must be calculated/adjusted
     public static final int HEIGHT_GANTT = 45;
     
     //predefined spaces for components
@@ -94,21 +94,35 @@ public class DrawHelper {
         // fill all the image with white
         g2d.setColor(Color.white);
         g2d.fillRect(0, 0, width, height);
+        latest_finish = LATEST_END;
+    }
+    
+        DrawHelper(ArrayList<ArrayList<Data>> arrayArrayNodes, String caso, int LF) {
+        this.arrayROOT = arrayArrayNodes;
+        this.scenario = caso;
         
+        // Constructs a BufferedImage of one of the predefined image types.
+        bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        // Create a graphics which can be used to draw into the buffered image
+        g2d = bufferedImage.createGraphics();
+        
+        // fill all the image with white
+        g2d.setColor(Color.white);
+        g2d.fillRect(0, 0, width, height);        
+        latest_finish = LF;
     }
     
     public void drawGantts() {
         //create Gantts (auxiliar class)
-        int end = (latest_finish == -1)? LONGEST_END : latest_finish;
         int i = 0;
         for (ArrayList<Data> a : arrayROOT) {
             Gantt g = new Gantt(a,a.get(0).getNode());
-            g.proccess(end);
+            g.proccess(latest_finish);
             drawGantt(g,i);
             i++;
         }
         drawTimeMarkers(i);
-
         
         try {
             save(bufferedImage);
@@ -117,9 +131,16 @@ public class DrawHelper {
         }
     }
 
+    // Save as PNG
     private void save(BufferedImage buff) throws IOException {
-        // Save as PNG
-        File file = new File(scenario + ".png");
+        //sanity check for the directory
+        File dir = new File("gen/");
+        if (!dir.exists()) {
+            dir.mkdir();
+        }
+        
+        //create and save file
+        File file = new File(dir.getPath() + "/" + scenario + ".png");
         ImageIO.write(buff, "png", file);
     }
     
@@ -193,15 +214,15 @@ public class DrawHelper {
             }
         }
         //linhas 
-        drawLine(x+(LONGEST_END*PxS), y, x+(LONGEST_END*PxS), y+HEIGHT_GANTT, Color.black);
-        drawLine(x, y, x+(LONGEST_END*PxS), y, Color.black);
-        drawLine(x, y+HEIGHT_GANTT, x+(LONGEST_END*PxS), y+HEIGHT_GANTT, Color.black);
+        drawLine(x+(LATEST_END*PxS), y, x+(LATEST_END*PxS), y+HEIGHT_GANTT, Color.black);
+        drawLine(x, y, x+(LATEST_END*PxS), y, Color.black);
+        drawLine(x, y+HEIGHT_GANTT, x+(LATEST_END*PxS), y+HEIGHT_GANTT, Color.black);
     }
 
     private void drawTimeMarkers(int id) {
         int offset = OFFSET_SINGLE;
         int x = NAME_SPACE + 2*HORIZONTAL_SPACE, y = HEIGHT_GANTT*(id)+VERTICAL_SPACE;
-        for (int i = 0; i <= LONGEST_END; i+=25) {
+        for (int i = 0; i <= LATEST_END; i+=25) {
             String s = Integer.toString(i);
             if (i == 25) offset = OFFSET_DOUBLE;
             else if (i == 100) offset = OFFSET_TRIPLE;

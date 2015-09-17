@@ -140,8 +140,8 @@ public class Parser {
         return separatedArrayNodes;
     }
 
-    //get the longest finish time in an App.
-    static int getLongestFinishTime(ArrayList<ArrayList<Data>> arrayROOT) {
+    //get the latest finish time in an App.
+    static int getLatestFinishTime(ArrayList<ArrayList<Data>> arrayROOT) {
         int ret = 0;
         for (ArrayList<Data> a : arrayROOT) {
             for (Data d : a) {
