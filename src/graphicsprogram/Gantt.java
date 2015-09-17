@@ -16,17 +16,17 @@ public class Gantt {
     String resource;
     ArrayList<Integer> segmentLines;
     ArrayList<Integer> activeContainers;
-    ArrayList<Data> input;
+    ArrayList<ContainerData> input;
     int larger;
 
-    public Gantt(ArrayList<Data> in, String res) {
+    public Gantt(ArrayList<ContainerData> in, String res) {
         segmentLines = new ArrayList<>();
         activeContainers = new ArrayList<>();
         input = in;
         resource = res;
     }
 
-    public void proccess(int _larger) {
+    public void proccess(int _larger, boolean verbose) {
         larger = _larger;
         int nextLine = 0;
         for (int i = 0; i <= larger; i++) {
@@ -38,12 +38,12 @@ public class Gantt {
             if (nextLine == -1)
                 break;
         }
-        System.out.println(this);
+        if (verbose) System.out.println(this);
     }
 
     private Integer getActive(int i) {
         int ret = 0;
-        for (Data d : input) {
+        for (ContainerData d : input) {
             if (d.getStartTime() <= i && d.getEndTime() > i) {
                 ret++;
             }
@@ -61,7 +61,7 @@ public class Gantt {
     }
 
     private boolean hasLine(int i) {
-        for (Data d : input) {
+        for (ContainerData d : input) {
             if(d.getStartTime() == i || d.getEndTime() == i)
                 return true;
         }

@@ -5,6 +5,7 @@
  */
 package graphicsprogram;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -20,22 +21,23 @@ import javax.imageio.ImageIO;
  * @author cassales
  */
 public class DrawHelper {
-    //image size
-    public static final int width = 3285; //must be calculated/adjusted.
-    public static final int height = 250;
+    //image size. must be calculated/adjusted.
+    public static final int DEFAULT_WIDTH = 3285;
+    public static final int DEFAULT_HEIGHT = 250;
     
     //steps
     public static final int STEP_HORIZONTAL = 1;
     public static final int STEP_VERTICAL = 10;
     
-    //graph size
-    public static final int LATEST_END = 500; //longest container, must be calculated/adjusted
-    public static final int HEIGHT_GANTT = 45;
+    //chart maximum x axis
+    public static final int DEFAULT_LATEST_END = 500;
+    //height of each node line
+    public static final int DEFAULT_HEIGHT_GANTT = 45;
     
     //predefined spaces for components
-    public static final int VERTICAL_SPACE = 15;
-    public static final int HORIZONTAL_SPACE = 5;
-    public static final int NAME_SPACE = 80;
+    public static final int DEFAULT_VERTICAL_SPACE = 15;
+    public static final int DEFAULT_HORIZONTAL_SPACE = 5;
+    public static final int DEFAULT_NAME_SPACE = 80;
     
     //predefined markers size
     public static final int MARKER_SPACE_50 = 20;
@@ -75,31 +77,44 @@ public class DrawHelper {
 //    public static final int OFFSET_QUADRUPLE = 16;
     
     
-    ArrayList<ArrayList<Data>> arrayROOT;
+    ArrayList<ArrayList<ContainerData>> arrayROOT;
     BufferedImage bufferedImage;
     Graphics2D g2d;
     String scenario;
-    public int latest_finish = -1;
+    int latest_finish = -1;
+    int width = -1;
+    int height = -1;
+    boolean verbose = false;
+    boolean compose = false;
 
-    DrawHelper(ArrayList<ArrayList<Data>> arrayArrayNodes, String caso) {
+    DrawHelper(ArrayList<ArrayList<ContainerData>> arrayArrayNodes, String scenario) {
         this.arrayROOT = arrayArrayNodes;
-        this.scenario = caso;
+        this.scenario = scenario;
+        latest_finish = DEFAULT_LATEST_END;
+        
+        // Calculate sizes before constructing the image
+        width = DEFAULT_NAME_SPACE + 3*DEFAULT_HORIZONTAL_SPACE + (latest_finish*PxS); //depends on latest_finish
+        height = DEFAULT_VERTICAL_SPACE + arrayROOT.size()*DEFAULT_HEIGHT_GANTT + MARKER_SPACE_50; //depends on the number of nodes of a given experiment
         
         // Constructs a BufferedImage of one of the predefined image types.
-        bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        bufferedImage = new BufferedImage(width, DEFAULT_HEIGHT, BufferedImage.TYPE_INT_RGB);
 
         // Create a graphics which can be used to draw into the buffered image
         g2d = bufferedImage.createGraphics();
         
         // fill all the image with white
         g2d.setColor(Color.white);
-        g2d.fillRect(0, 0, width, height);
-        latest_finish = LATEST_END;
+        g2d.fillRect(0, 0, width, DEFAULT_HEIGHT);
     }
     
-        DrawHelper(ArrayList<ArrayList<Data>> arrayArrayNodes, String caso, int LF) {
+    DrawHelper(ArrayList<ArrayList<ContainerData>> arrayArrayNodes, String scenario, int LF) {
         this.arrayROOT = arrayArrayNodes;
-        this.scenario = caso;
+        this.scenario = scenario;
+        latest_finish = LF;
+        
+        // Calculate sizes before constructing the image
+        width = DEFAULT_NAME_SPACE + 4*DEFAULT_HORIZONTAL_SPACE + (latest_finish*PxS);
+        height = 3*DEFAULT_VERTICAL_SPACE + arrayROOT.size()*DEFAULT_HEIGHT_GANTT + MARKER_SPACE_50; //depends on the number of nodes of a given experiment
         
         // Constructs a BufferedImage of one of the predefined image types.
         bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -109,20 +124,42 @@ public class DrawHelper {
         
         // fill all the image with white
         g2d.setColor(Color.white);
-        g2d.fillRect(0, 0, width, height);        
+        g2d.fillRect(0, 0, width, DEFAULT_HEIGHT);        
+    }
+    
+        DrawHelper(ArrayList<ArrayList<ContainerData>> arrayArrayNodes, String scenario, int LF, boolean v) {
+        this.arrayROOT = arrayArrayNodes;
+        this.scenario = scenario;
         latest_finish = LF;
+        verbose = v;
+        
+        // Calculate sizes before constructing the image
+        width = DEFAULT_NAME_SPACE + 4*DEFAULT_HORIZONTAL_SPACE + (latest_finish*PxS);
+        height = 3*DEFAULT_VERTICAL_SPACE + arrayROOT.size()*DEFAULT_HEIGHT_GANTT + MARKER_SPACE_50; //depends on the number of nodes of a given experiment
+        
+        // Constructs a BufferedImage of one of the predefined image types.
+        bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        // Create a graphics which can be used to draw into the buffered image
+        g2d = bufferedImage.createGraphics();
+        
+        // fill all the image with white
+        g2d.setColor(Color.white);
+        g2d.fillRect(0, 0, width, DEFAULT_HEIGHT);        
     }
     
     public void drawGantts() {
-        //create Gantts (auxiliar class)
+        //create Gantts
         int i = 0;
-        for (ArrayList<Data> a : arrayROOT) {
+        for (ArrayList<ContainerData> a : arrayROOT) {
+            //create the data for a node
             Gantt g = new Gantt(a,a.get(0).getNode());
-            g.proccess(latest_finish);
-            drawGantt(g,i);
-            i++;
+            //calculates the position of segment lines and how many active containers in each segment
+            g.proccess(latest_finish, verbose);
+            //draw a node line
+            drawGantt(g,arrayROOT.indexOf(a));
         }
-        drawTimeMarkers(i);
+        drawTimeMarkers(arrayROOT.size());
         
         try {
             save(bufferedImage);
@@ -135,9 +172,6 @@ public class DrawHelper {
     private void save(BufferedImage buff) throws IOException {
         //sanity check for the directory
         File dir = new File("gen/");
-        if (!dir.exists()) {
-            dir.mkdir();
-        }
         
         //create and save file
         File file = new File(dir.getPath() + "/" + scenario + ".png");
@@ -188,8 +222,13 @@ public class DrawHelper {
     }
 
     private void drawGantt(Gantt g, int id) {
-        int x = NAME_SPACE + 2*HORIZONTAL_SPACE, y = HEIGHT_GANTT*id+VERTICAL_SPACE;
-        this.drawString(g.resource, HORIZONTAL_SPACE, y + (HEIGHT_GANTT/2) + HEIGHT_GANTT%2, Color.black);
+        //the starting point in x and y axis for the chart
+        int x = DEFAULT_NAME_SPACE + 2*DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT*id+DEFAULT_VERTICAL_SPACE;
+        
+        //draw the resource name before each line
+        this.drawString(g.resource, DEFAULT_HORIZONTAL_SPACE, y + (DEFAULT_HEIGHT_GANTT/2) + DEFAULT_HEIGHT_GANTT%2, Color.black);
+        
+        //controls how many segment lines each node will have
         int size = g.segmentLines.size();
         for (int i = 0; i < size; i++) {
             if (i != size -1) {
@@ -197,32 +236,36 @@ public class DrawHelper {
                 drawRectangle(x+g.segmentLines.get(i)*PxS,
                         y,
                         (g.segmentLines.get(i+1) - g.segmentLines.get(i))*PxS,
-                        HEIGHT_GANTT,
+                        DEFAULT_HEIGHT_GANTT,
                         true,
                         new Color(c,c,c));
                 drawLine(x+g.segmentLines.get(i)*PxS,
                         y,
                         x+g.segmentLines.get(i)*PxS,
-                        y+HEIGHT_GANTT,
+                        y+DEFAULT_HEIGHT_GANTT,
                         Color.black);
             } else {
                 drawLine(x+g.segmentLines.get(i)*PxS,
                         y,
                         x+g.segmentLines.get(i)*PxS,
-                        y+HEIGHT_GANTT,
+                        y+DEFAULT_HEIGHT_GANTT,
                         Color.black);
             }
         }
-        //linhas 
-        drawLine(x+(LATEST_END*PxS), y, x+(LATEST_END*PxS), y+HEIGHT_GANTT, Color.black);
-        drawLine(x, y, x+(LATEST_END*PxS), y, Color.black);
-        drawLine(x, y+HEIGHT_GANTT, x+(LATEST_END*PxS), y+HEIGHT_GANTT, Color.black);
+        //cosmetic lines 
+        drawLine(x+(latest_finish*PxS), y, x+(latest_finish*PxS), y+DEFAULT_HEIGHT_GANTT, Color.black);
+        drawLine(x, y, x+(latest_finish*PxS), y, Color.black);
+        drawLine(x, y+DEFAULT_HEIGHT_GANTT, x+(latest_finish*PxS), y+DEFAULT_HEIGHT_GANTT, Color.black);
     }
 
-    private void drawTimeMarkers(int id) {
+    /**
+     * Draw time markers on the chart.
+     * @param numberOfNodes The number of nodes contained in this experiment
+     */
+    private void drawTimeMarkers(int numberOfNodes) {
         int offset = OFFSET_SINGLE;
-        int x = NAME_SPACE + 2*HORIZONTAL_SPACE, y = HEIGHT_GANTT*(id)+VERTICAL_SPACE;
-        for (int i = 0; i <= LATEST_END; i+=25) {
+        int x = DEFAULT_NAME_SPACE + 2*DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT*(numberOfNodes)+DEFAULT_VERTICAL_SPACE;
+        for (int i = 0; i <= latest_finish; i+=25) {
             String s = Integer.toString(i);
             if (i == 25) offset = OFFSET_DOUBLE;
             else if (i == 100) offset = OFFSET_TRIPLE;
@@ -230,11 +273,58 @@ public class DrawHelper {
             
             if (i%50 == 0) {
                 drawLine(x+i*PxS, y, x+i*PxS, y+MARKER_SPACE_50, Color.black);
-                drawString(s, x+i*PxS-offset, y + MARKER_SPACE_50 + VERTICAL_SPACE, Color.black);
+                drawString(s, x+i*PxS-offset, y + MARKER_SPACE_50 + DEFAULT_VERTICAL_SPACE, Color.black);
             } else {
                 drawLine(x+i*PxS, y, x+i*PxS, y+MARKER_SPACE_25, Color.black);
-                drawString(s, x+i*PxS-offset, y + MARKER_SPACE_50 + VERTICAL_SPACE, Color.black);
+                drawString(s, x+i*PxS-offset, y + MARKER_SPACE_50 + DEFAULT_VERTICAL_SPACE, Color.black);
             }
+        }
+    }
+    
+    /**
+     * prints the contents of buff2 on buff1 with the given opaque value.
+     *
+     * @param buff1 buffer
+     * @param buff2 buffer
+     * @param opaque how opaque the second buffer should be drawn
+     * @param x x position where the second buffer should be drawn
+     * @param y y position where the second buffer should be drawn
+     */
+    public static void addImage(BufferedImage buff1, BufferedImage buff2, float opaque, int x, int y) {
+        Graphics2D g2d = buff1.createGraphics();
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opaque));
+        g2d.drawImage(buff2, x, y, null);
+        g2d.dispose();
+    }
+
+   /**
+     * returns a BufferedImage from the Image provided.
+     *
+     * @param ref path to image
+     * @return loaded image
+     */
+    public static BufferedImage loadImage(String ref) {
+        BufferedImage b1 = null;
+        try {
+            b1 = ImageIO.read(new File(ref));
+        } catch (IOException e) {
+            System.out.println("error loading the image: " + ref + " : " + e);
+        }
+        return b1;
+    }
+    
+     /**
+     * writes the image in the provided buffer to the destination file.
+     *
+     * @param buff buffer to be saved
+     * @param dest destination to save at
+     */
+    public static void saveImage(BufferedImage buff, String dest) {
+        try {
+            File outputfile = new File(dest);
+            ImageIO.write(buff, "png", outputfile);
+        } catch (IOException e) {
+            System.out.println("error saving the image: " + dest + ": " + e);
         }
     }
 }
