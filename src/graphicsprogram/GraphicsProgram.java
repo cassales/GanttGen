@@ -20,56 +20,59 @@ import java.util.Set;
 public class GraphicsProgram {
 
     public static void main(String[] argS) throws IOException {
-        String f1 = "AssignCut", f2 = "RMCut", s = null;
-        if (argS.length == 0) {
-            Scanner scanner = new Scanner(System.in);
-            System.out.println("Type the name of the .log file you desire to generate without extension");
-            s = scanner.nextLine();
-        } else {
-            s = argS[0];
+        String f1 = "AssignCut", f2 = "RMCut", name = null;
+        ArrayList<Job> allJobsOrdered = new ArrayList<>();
+        
+        //get all files with .log extension inside the folder
+        File[] logFiles = getLogFiles();
+        //populate array with all jobs. Will consider each .log file as a job.
+        for (File f : logFiles) {
+            name = f.getName().substring(0, f.getName().indexOf("."));
+            allJobsOrdered.add(new Job(Parser.parseFiles(new File(f1+name), new File(f2+name)), name));
         }
-        
-        
-        System.out.println("s " + s);
-        File start = new File(f1+s);
-        File finish = new File(f2+s);
-        
-        ArrayList<Data> jobOrdered = Parser.parseFiles(start,finish);
-        int latest_finish = getLatestFinishInAllJobs();
+        //get the latest container to finish among all jobs
+        //run through each array to discover the container with the latest finish time 
+        int lf = Parser.getLatestFinishTime(allJobsOrdered);
+        //smaller 10 multiple greater than lf
+        int latest_finish = (10 - lf%10) + lf;
         System.out.println("Latest Finish " + latest_finish);
-        printSynopsis(jobOrdered);
-        Set<String> uniqueNodes = Parser.getUniqueNodesSet(jobOrdered);
-        
-        ArrayList<ArrayList<Data>> nodeSeparatedOrdered = new ArrayList<>();
-        nodeSeparatedOrdered = Parser.separateJobOrderedInNodes(jobOrdered,uniqueNodes);
-
-        
-        //draw gantt for each nodeSeparatedOrdered array.
-        DrawHelper dH = new DrawHelper(nodeSeparatedOrdered,s,latest_finish);
-        dH.drawGantts();
-        
+        //for each job, generate Gantt
+        for (Job j : allJobsOrdered) {
+            System.out.println("------------------------------------------------");
+            System.out.println("Scenario: " + j.getName());
+            printSynopsis(j.getJobOrdered());
+            //get the node names
+            Set<String> uniqueNodes = Parser.getUniqueNodesSet(j.getJobOrdered());
+            //array to hold the containers separated by nodes
+            ArrayList<ArrayList<ContainerData>> nodeSeparatedOrdered = new ArrayList<>();
+            nodeSeparatedOrdered = Parser.separateJobOrderedInNodes(j.getJobOrdered(), uniqueNodes);
+            //draw gantt for each node array.
+            DrawHelper dH = new DrawHelper(nodeSeparatedOrdered, j.getName(), latest_finish);
+            dH.drawGantts();
+        }
     }
 
-    private static void printSynopsis(ArrayList<Data> jobOrdered) {
+    private static void printSynopsis(ArrayList<ContainerData> jobOrdered) {
         int latestFinishTime = 0;
         int totalMaps=0, numberMaps=0;
-        for (Data d : jobOrdered) {
+        for (ContainerData d : jobOrdered) {
             if (d.getEndTime() > latestFinishTime)
                 latestFinishTime = d.getEndTime();
             numberMaps++;
             totalMaps+=d.getTotalTime();
         }
+        //show metrics
         float mediumTime = (float)totalMaps/(float)numberMaps;
         System.out.println("Total Map Time " + latestFinishTime);
         System.out.println("Medium Map Time " + mediumTime);
-        System.out.println("Standard Deviation " + calcStdDev(jobOrdered,mediumTime));
+        System.out.println("Standard Deviation " + calcStdDev(jobOrdered, mediumTime));
     }
 
-    private static float calcStdDev(ArrayList<Data> jobOrdered, float mediumTime) {
+    private static float calcStdDev(ArrayList<ContainerData> jobOrdered, float mediumTime) {
         float res = 0;
         float sumOfDiffSquared = 0;
         int numberDiffs = 0;
-        for (Data d : jobOrdered) {
+        for (ContainerData d : jobOrdered) {
             float diff = d.getTotalTime() - mediumTime;
             float pow = diff * diff;
             sumOfDiffSquared += pow;
@@ -79,33 +82,16 @@ public class GraphicsProgram {
         return res;
     }
 
-    private static int getLatestFinishInAllJobs() throws IOException {
-        String f1 = "AssignCut", f2 = "RMCut";
-        File[] logFiles = getLogFiles();
-        ArrayList<ArrayList<Data>> allJobsOrdered = new ArrayList<>();
-        
-        //populate array with all jobs. Will consider each .log file as a job.
-        for (File f : logFiles) {
-            String name = f.getName().substring(0, f.getName().indexOf("."));
-            allJobsOrdered.add(Parser.parseFiles(new File(f1+name),new File(f2+name)));
-        }
-        
-        //run through each array to discover the container with the latest finish time 
-        int lf = Parser.getLatestFinishTime(allJobsOrdered);
-        //smaller 10 multiple greater than lf
-        return (10 - lf%10) + lf;
-    }
-
     private static File[] getLogFiles() {
         File fs = new File(".");
-        // create new filename filter
+        //create new filename filter
         FilenameFilter fileNameFilter = new FilenameFilter() {
 
             @Override
             public boolean accept(File dir, String name) {
                 String str = "";
                 if (name.lastIndexOf('.') > 0) {
-                    // get extension
+                    //get extension
                     str = name.substring(name.lastIndexOf('.'));
                     
                     if (str.equals(".log")) {

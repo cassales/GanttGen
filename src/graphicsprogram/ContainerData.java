@@ -12,7 +12,7 @@ import java.util.Date;
  *
  * @author cassales
  */
-public class Data implements Comparable {
+public class ContainerData implements Comparable {
     private int containerNumber;
     private String node;
     private int startTime;
@@ -21,14 +21,14 @@ public class Data implements Comparable {
     private String strEndTime;
     private long totalTime;
 
-    public Data(int containerNumber, String node, String strStartTime, String strEndTime) {
+    public ContainerData(int containerNumber, String node, String strStartTime, String strEndTime) {
         this.containerNumber = containerNumber;
         this.node = node;
         this.strStartTime = strStartTime;
         this.strEndTime = strEndTime;
     }
 
-    public Data(int containerNumber, String node, String strStartTime) {
+    public ContainerData(int containerNumber, String node, String strStartTime) {
         this.containerNumber = containerNumber;
         this.node = node;
         this.strStartTime = strStartTime;
@@ -93,7 +93,7 @@ public class Data implements Comparable {
     
     @Override
     public int compareTo(Object o) {
-        Data d = (Data) o;
+        ContainerData d = (ContainerData) o;
         return this.containerNumber-d.containerNumber;
     }
 
