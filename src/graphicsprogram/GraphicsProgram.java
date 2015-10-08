@@ -5,12 +5,22 @@
  */
 package graphicsprogram;
 
+import static graphicsprogram.DrawHelper.DEFAULT_HEIGHT;
+import static graphicsprogram.DrawHelper.DEFAULT_HEIGHT_GANTT;
+import static graphicsprogram.DrawHelper.DEFAULT_HORIZONTAL_SPACE;
+import static graphicsprogram.DrawHelper.DEFAULT_NAME_SPACE;
+import static graphicsprogram.DrawHelper.DEFAULT_VERTICAL_SPACE;
+import static graphicsprogram.DrawHelper.MARKER_SPACE_50;
+import static graphicsprogram.DrawHelper.PxS;
 import static graphicsprogram.GraphicsProgram.verbose;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -113,7 +123,13 @@ public class GraphicsProgram {
             for (GanttNode gn : j.getNodes()) {
                 dH.drawGantt(gn, j.getNodes().indexOf(gn));
             }
-            
+            dH.drawTimeMarkers(j.getNodeSeparatedOrderedContainers().size());
+
+            try {
+                dH.save();
+            } catch (IOException ex) {
+                Logger.getLogger(DrawHelper.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         if (compose) {
             ArrayList<BufferedImage> abi = new ArrayList<>();

@@ -79,13 +79,13 @@ public class DrawHelper {
     }
 
     // Save as PNG
-    public void save(BufferedImage buff) throws IOException {
+    public void save() throws IOException {
         //sanity check for the directory
         File dir = new File("gen/");
 
         //create and save file
         File file = new File(dir.getPath() + "/" + scenario + ".png");
-        ImageIO.write(buff, "png", file);
+        ImageIO.write(bufferedImage, "png", file);
     }
 
     public void drawString(String s, float x, float y, Color col) {
@@ -171,7 +171,7 @@ public class DrawHelper {
      *
      * @param numberOfNodes The number of nodes contained in this experiment
      */
-    private void drawTimeMarkers(int numberOfNodes) {
+    public void drawTimeMarkers(int numberOfNodes) {
         int offset = OFFSET_SINGLE;
         int x = DEFAULT_NAME_SPACE + 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * (numberOfNodes) + DEFAULT_VERTICAL_SPACE;
         for (int i = 0; i <= GraphicsProgram.latest_finish; i += 25) {
