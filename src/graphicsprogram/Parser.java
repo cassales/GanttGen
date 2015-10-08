@@ -19,11 +19,11 @@ import java.util.Set;
  *
  * @author cassales
  */
-public class Parser {   
-    
-    public static ArrayList<ContainerData> parseFiles(File start, File finish, int redNumber) {
-        ArrayList<ContainerData> ret = new ArrayList<>();
-        
+public class Parser {
+
+    public static ArrayList<ContainerData> parseFiles(File start, File finish) {
+        ArrayList<ContainerData> jobOrdered = new ArrayList<>();
+
         //parse constainers start
         BufferedReader br = null;
         String line;
@@ -31,7 +31,7 @@ public class Parser {
             br = new BufferedReader(new FileReader(start));
             while ((line = br.readLine()) != null) {
                 String[] spli = line.split(" ");
-                ret.add(new ContainerData(Integer.parseInt(spli[2].substring(spli[2].length()-4)), spli[5].substring(0,spli[5].indexOf(".")), spli[0]));
+                jobOrdered.add(new ContainerData(Integer.parseInt(spli[2].substring(spli[2].length() - 4)), spli[5].substring(0, spli[5].indexOf(".")), spli[0]));
             }
 
         } catch (IOException e) {
@@ -45,20 +45,18 @@ public class Parser {
                 ex.printStackTrace();
             }
         }
-        
-        
-        
+
         //sort by container
-        Collections.sort(ret);
-        
+        Collections.sort(jobOrdered);
+
         //parse containers finish
         try {
             br = new BufferedReader(new FileReader(finish));
             while ((line = br.readLine()) != null) {
                 String[] spli = line.split(" ");
-                int id = Integer.parseInt(spli[1].substring(spli[1].length()-4))-1;
-                ret.get(id).setStrEndTime(spli[0]);
-                ret.get(id).setTotalTime();
+                int id = Integer.parseInt(spli[1].substring(spli[1].length() - 4)) - 1;
+                jobOrdered.get(id).setStrEndTime(spli[0]);
+                jobOrdered.get(id).setTotalTime();
             }
 
         } catch (IOException e) {
@@ -72,71 +70,21 @@ public class Parser {
                 ex.printStackTrace();
             }
         }
-        
-        
+
+//        jobOrdered = new Job(jobOrdered);
         //normalize times
-        ret = Parser.normalize(ret);
-        ret = Parser.removeReducers(ret,redNumber);
-        
-        return ret;
+//        jobOrdered = Parser.normalize(jobOrdered);
+//        jobOrdered = Parser.removeReducers(jobOrdered,redNumber);
+        return jobOrdered;
     }
 
-    //nomalize times referent to the first Map container
-    private static ArrayList<ContainerData> normalize(ArrayList<ContainerData> in) {
-        in.remove(0); //remove ApplicationMaster, will always be the first container
-        String sTimeNorm = in.get(0).getStrStartTime();
-        for (ContainerData d : in) { 
-            d.normalize(sTimeNorm);
-        }
-        return in;
-    }
-
-    //remove reduce containers (the longest ones)
-    private static ArrayList<ContainerData> removeReducers(ArrayList<ContainerData> in, int reduces) {
-        for (int i = 0; i < reduces; i++) {
-            in = removeLongestFinishTime(in);
-        }
-        return in;
-    }
-    
-    //auxiliar function for removing reducers
-    private static ArrayList<ContainerData> removeLongestFinishTime(ArrayList<ContainerData> in) {
-        long longestTime = 0;
-        ContainerData objLongest = null;
-        for (ContainerData d : in) {
-            if (d.getTotalTime() > longestTime) {
-                objLongest = d;
-                longestTime = objLongest.getTotalTime();
-            }
-        }
-        if (objLongest != null)
-            in.remove(objLongest);
-        return in;
-    }
-    
     //returns a set<String> with the nodes used in the experiment.
     static Set<String> getUniqueNodesSet(ArrayList<ContainerData> jobOrdered) {
         List<String> nodesList = new ArrayList<>();
-        for (ContainerData d : jobOrdered)
+        for (ContainerData d : jobOrdered) {
             nodesList.add(d.getNode());
-        return new HashSet<String>(nodesList);
-    }
-
-    //separate the AppArray in as many arrays as the number of slaves.
-    static ArrayList<ArrayList<ContainerData>> separateJobOrderedInNodes(ArrayList<ContainerData> jobOrdered, Set<String> uniqueNodes) {
-        ArrayList<ArrayList<ContainerData>> separatedArrayNodes = new ArrayList<ArrayList<ContainerData>>();
-        
-        for (String s : uniqueNodes) {
-            ArrayList<ContainerData> arrayAux = new ArrayList<>();
-            for (ContainerData d : jobOrdered) {
-                if (d.getNode().equals(s)) {
-                    arrayAux.add(d);
-                }
-            }
-            separatedArrayNodes.add(arrayAux);
         }
-
-        return separatedArrayNodes;
+        return new HashSet<String>(nodesList);
     }
 
     //get the latest finish time in an App.
@@ -145,10 +93,27 @@ public class Parser {
         for (Job j : arrayROOT) {
             ArrayList<ContainerData> AL = j.getJobOrdered();
             for (ContainerData d : AL) {
-                if (d.getEndTime() > ret)
+                if (d.getEndTime() > ret) {
                     ret = d.getEndTime();
+                }
             }
         }
         return ret;
+    }
+
+    static int getMostActiveContainers(ArrayList<Job> allJobsOrdered) {
+        int max = 0;
+        int soma = 0;
+        for (Job j : allJobsOrdered) {
+            for (GanttNode gn : j.getNodes()) {
+                for (int i = 0; i < gn.activeContainers.size(); i++) {
+                    soma = gn.activeContainers.get(i) + gn.activeReducers.get(i);
+                    if (soma > max) {
+                        max = soma;
+                    }
+                }
+            }
+        }
+        return max;
     }
 }
