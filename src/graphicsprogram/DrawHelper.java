@@ -31,7 +31,7 @@ public class DrawHelper {
     //chart maximum x axis
     public static final int DEFAULT_LATEST_END = 500;
     //height of each node line
-    public static final int DEFAULT_HEIGHT_GANTT = 45;
+    public static int DEFAULT_HEIGHT_GANTT = 45;
 
     //predefined spaces for components
     public static final int DEFAULT_VERTICAL_SPACE = 15;
@@ -62,6 +62,7 @@ public class DrawHelper {
 
     DrawHelper(int numberOfGantts, String scenario) {
         this.scenario = scenario;
+        this.DEFAULT_HEIGHT_GANTT = GraphicsProgram.max_containers * 2;
 
         // Calculate sizes before constructing the image
         width = DEFAULT_NAME_SPACE + 4 * DEFAULT_HORIZONTAL_SPACE + (GraphicsProgram.latest_finish * PxS);
@@ -140,13 +141,31 @@ public class DrawHelper {
         int size = g.segmentLines.size();
         for (int i = 0; i < size; i++) {
             if (i != size - 1) {
-                float c = 1 - ((float) g.activeContainers.get(i) / (float) 16);
+                float c = 1 - ((float) g.activeContainers.get(i) / (float) (GraphicsProgram.max_containers));
+                int startY = y + (int) ((1 - g.activeContainers.get(i) / ((float) GraphicsProgram.max_containers)) * DEFAULT_HEIGHT_GANTT);
+                int heightY = (int) ((g.activeContainers.get(i) / (float) GraphicsProgram.max_containers) * DEFAULT_HEIGHT_GANTT);
+                int startYR = startY - (int) ((g.activeReducers.get(i) / ((float) GraphicsProgram.max_containers)) * DEFAULT_HEIGHT_GANTT);
+                int heightYR = (int) ((g.activeReducers.get(i) / (float) GraphicsProgram.max_containers) * DEFAULT_HEIGHT_GANTT);
                 drawRectangle(x + g.segmentLines.get(i) * PxS,
-                        y,
+                        startY,
                         (g.segmentLines.get(i + 1) - g.segmentLines.get(i)) * PxS,
-                        DEFAULT_HEIGHT_GANTT,
+                        heightY,
                         true,
                         new Color(c, c, c));
+                drawRectangle(x + g.segmentLines.get(i) * PxS,
+                        startYR,
+                        (g.segmentLines.get(i + 1) - g.segmentLines.get(i)) * PxS,
+                        heightYR,
+                        true,
+                        Color.green);
+                if (g.appMaster != null) {
+                    drawRectangle(x + g.segmentLines.get(i) * PxS,
+                            startYR - (int) ((2 / ((float) GraphicsProgram.max_containers)) * DEFAULT_HEIGHT_GANTT),
+                            (g.segmentLines.get(i + 1) - g.segmentLines.get(i)) * PxS,
+                            (int) ((2 / (float) GraphicsProgram.max_containers) * DEFAULT_HEIGHT_GANTT),
+                            true,
+                            Color.blue);
+                }
                 drawLine(x + g.segmentLines.get(i) * PxS,
                         y,
                         x + g.segmentLines.get(i) * PxS,
@@ -161,6 +180,7 @@ public class DrawHelper {
             }
         }
         //cosmetic lines 
+        drawLine(x + g.lastAppMap * PxS, y, x + g.lastAppMap * PxS, y + DEFAULT_HEIGHT_GANTT, Color.red);
         drawLine(x + (GraphicsProgram.latest_finish * PxS), y, x + (GraphicsProgram.latest_finish * PxS), y + DEFAULT_HEIGHT_GANTT, Color.black);
         drawLine(x, y, x + (GraphicsProgram.latest_finish * PxS), y, Color.black);
         drawLine(x, y + DEFAULT_HEIGHT_GANTT, x + (GraphicsProgram.latest_finish * PxS), y + DEFAULT_HEIGHT_GANTT, Color.black);

@@ -19,14 +19,29 @@ public class GanttNode {
     ArrayList<Integer> activeReducers;
     ArrayList<ContainerData> containers;
     ArrayList<ContainerData> reducers;
-    
-    public GanttNode(ArrayList<ContainerData> cont, ArrayList<ContainerData> red) {
+    ContainerData appMaster;
+    int lastAppMap;
+
+    public GanttNode(ArrayList<ContainerData> cont, ArrayList<ContainerData> red, int LAM) {
         segmentLines = new ArrayList<>();
         activeContainers = new ArrayList<>();
         activeReducers = new ArrayList<>();
         containers = cont;
         reducers = red;
         resource = containers.get(0).getNode();
+        appMaster = null;
+        lastAppMap = LAM;
+    }
+
+    public GanttNode(ArrayList<ContainerData> cont, ArrayList<ContainerData> red, int LAM, ContainerData AM) {
+        segmentLines = new ArrayList<>();
+        activeContainers = new ArrayList<>();
+        activeReducers = new ArrayList<>();
+        containers = cont;
+        reducers = red;
+        resource = containers.get(0).getNode();
+        appMaster = AM;
+        lastAppMap = LAM;
     }
 
     public void proccess() {
@@ -40,9 +55,16 @@ public class GanttNode {
             activeReducers.add(this.getActiveReducers(i));
             nextLine = this.getNextLine(i);
             if (nextLine == -1) {
+                if ((appMaster != null && this.appMaster.getEndTime() > GraphicsProgram.latest_finish) 
+                        || (this.reducers.get(0).getEndTime() > GraphicsProgram.latest_finish)) {
+                    segmentLines.add(GraphicsProgram.latest_finish);
+                    activeContainers.add(this.getActiveContainers(GraphicsProgram.latest_finish));
+                    activeReducers.add(this.getActiveReducers(GraphicsProgram.latest_finish));
+                }
                 break;
             }
         }
+
         if (GraphicsProgram.verbose) {
             System.out.println(this);
         }
@@ -57,7 +79,7 @@ public class GanttNode {
         }
         return ret;
     }
-    
+
     private Integer getActiveReducers(int i) {
         int ret = 0;
         for (ContainerData d : reducers) {
@@ -78,8 +100,20 @@ public class GanttNode {
     }
 
     private boolean hasLine(int i) {
-        for (ContainerData d : containers) {
-            if (d.getStartTime() == i || d.getEndTime() == i) {
+        for (int j = 0; j < containers.size() || j < reducers.size(); j++) {
+            if (j < containers.size()) {
+                if (containers.get(j).getStartTime() == i || containers.get(j).getEndTime() == i) {
+                    return true;
+                }
+            }
+            if (j < reducers.size()) {
+                if (reducers.get(j).getStartTime() == i || reducers.get(j).getEndTime() == i) {
+                    return true;
+                }
+            }
+        }
+        if (appMaster != null) {
+            if (appMaster.getEndTime() == i) {
                 return true;
             }
         }
@@ -93,5 +127,9 @@ public class GanttNode {
             ret += "\n timeLine " + segmentLines.get(i) + " activeContainers " + activeContainers.get(i) + " activeReducers " + activeReducers.get(i);
         }
         return ret;
+    }
+
+    public int getLastAppMap() {
+        return lastAppMap;
     }
 }
