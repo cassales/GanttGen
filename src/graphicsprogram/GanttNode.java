@@ -56,7 +56,7 @@ public class GanttNode {
             nextLine = this.getNextLine(i);
             if (nextLine == -1) {
                 if ((appMaster != null && this.appMaster.getEndTime() > GraphicsProgram.latest_finish) 
-                        || (this.reducers.get(0).getEndTime() > GraphicsProgram.latest_finish)) {
+                        || (this.reducers.size() > 0 && this.reducers.get(0).getEndTime() > GraphicsProgram.latest_finish)) {
                     segmentLines.add(GraphicsProgram.latest_finish);
                     activeContainers.add(this.getActiveContainers(GraphicsProgram.latest_finish));
                     activeReducers.add(this.getActiveReducers(GraphicsProgram.latest_finish));

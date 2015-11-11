@@ -5,15 +5,7 @@
  */
 package graphicsprogram;
 
-import static graphicsprogram.DrawHelper.DEFAULT_HEIGHT;
-import static graphicsprogram.DrawHelper.DEFAULT_HEIGHT_GANTT;
-import static graphicsprogram.DrawHelper.DEFAULT_HORIZONTAL_SPACE;
-import static graphicsprogram.DrawHelper.DEFAULT_NAME_SPACE;
-import static graphicsprogram.DrawHelper.DEFAULT_VERTICAL_SPACE;
-import static graphicsprogram.DrawHelper.MARKER_SPACE_50;
-import static graphicsprogram.DrawHelper.PxS;
 import static graphicsprogram.GraphicsProgram.verbose;
-import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;

@@ -37,6 +37,7 @@ public class DrawHelper {
     public static final int DEFAULT_VERTICAL_SPACE = 15;
     public static final int DEFAULT_HORIZONTAL_SPACE = 5;
     public static final int DEFAULT_NAME_SPACE = 80;
+    public static final int DEFAULT_CASE_SPACE = 45;
 
     //predefined markers size
     public static final int MARKER_SPACE_50 = 20;
@@ -65,8 +66,9 @@ public class DrawHelper {
         this.DEFAULT_HEIGHT_GANTT = GraphicsProgram.max_containers * 2;
 
         // Calculate sizes before constructing the image
-        width = DEFAULT_NAME_SPACE + 4 * DEFAULT_HORIZONTAL_SPACE + (GraphicsProgram.latest_finish * PxS);
-        height = 3 * DEFAULT_VERTICAL_SPACE + numberOfGantts * DEFAULT_HEIGHT_GANTT + MARKER_SPACE_50; //depends on the number of nodes of a given experiment
+        //width = DEFAULT_NAME_SPACE + 4 * DEFAULT_HORIZONTAL_SPACE + (GraphicsProgram.latest_finish * PxS);
+        width = 4 * DEFAULT_HORIZONTAL_SPACE + (GraphicsProgram.latest_finish * PxS);
+        height = 3 * DEFAULT_VERTICAL_SPACE + numberOfGantts * DEFAULT_HEIGHT_GANTT + MARKER_SPACE_50;
 
         // Constructs a BufferedImage of one of the predefined image types.
         bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -130,18 +132,19 @@ public class DrawHelper {
         g2d.drawLine(x1, y1, x2, y2);
     }
 
-    public void drawGantt(GanttNode g, int id) {
+    public void drawGantt(GanttNode g, int nodeNumber) {
         //the starting point in x and y axis for the chart
-        int x = DEFAULT_NAME_SPACE + 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * id + DEFAULT_VERTICAL_SPACE;
+        //int x = DEFAULT_NAME_SPACE + 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * nodeNumber + DEFAULT_VERTICAL_SPACE;
+        int x = 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * nodeNumber + DEFAULT_VERTICAL_SPACE;
 
         //draw the resource name before each line
-        this.drawString(g.resource, DEFAULT_HORIZONTAL_SPACE, y + (DEFAULT_HEIGHT_GANTT / 2) + DEFAULT_HEIGHT_GANTT % 2, Color.black);
+        //this.drawString(g.resource, DEFAULT_HORIZONTAL_SPACE, y + (DEFAULT_HEIGHT_GANTT / 2) + DEFAULT_HEIGHT_GANTT % 2, Color.black);
 
         //controls how many segment lines each node will have
         int size = g.segmentLines.size();
         for (int i = 0; i < size; i++) {
             if (i != size - 1) {
-                float c = 1 - ((float) g.activeContainers.get(i) / (float) (GraphicsProgram.max_containers));
+                float c = 1 - ((float) g.activeContainers.get(i) / (float) (GraphicsProgram.max_containers + 1));
                 int startY = y + (int) ((1 - g.activeContainers.get(i) / ((float) GraphicsProgram.max_containers)) * DEFAULT_HEIGHT_GANTT);
                 int heightY = (int) ((g.activeContainers.get(i) / (float) GraphicsProgram.max_containers) * DEFAULT_HEIGHT_GANTT);
                 int startYR = startY - (int) ((g.activeReducers.get(i) / ((float) GraphicsProgram.max_containers)) * DEFAULT_HEIGHT_GANTT);
@@ -193,7 +196,8 @@ public class DrawHelper {
      */
     public void drawTimeMarkers(int numberOfNodes) {
         int offset = OFFSET_SINGLE;
-        int x = DEFAULT_NAME_SPACE + 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * (numberOfNodes) + DEFAULT_VERTICAL_SPACE;
+        //int x = DEFAULT_NAME_SPACE + 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * (numberOfNodes) + DEFAULT_VERTICAL_SPACE;
+        int x = 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * (numberOfNodes) + DEFAULT_VERTICAL_SPACE;
         for (int i = 0; i <= GraphicsProgram.latest_finish; i += 25) {
             String s = Integer.toString(i);
             if (i == 25) {
