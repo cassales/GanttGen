@@ -77,6 +77,40 @@ public class Parser {
 //        jobOrdered = Parser.removeReducers(jobOrdered,redNumber);
         return jobOrdered;
     }
+    
+    public static void parseConsole(ArrayList<Job> aJO) {
+        BufferedReader br = null;
+        String line;
+        int id = 0;
+        try {
+            br = new BufferedReader(new FileReader("grepConsole"));
+            while ((line = br.readLine()) != null) {
+                if (line.contains("logfile:")) {
+                    String s = line.substring(line.indexOf(":")+1,line.indexOf(".")).trim();
+                    for (Job j : aJO) {
+                        if (j.getName().equals(s)) {
+                            id = aJO.indexOf(j);
+                            break;
+                        }
+                    }
+                } else {
+                    String s = line.substring(line.indexOf("=")+1).trim();
+                    aJO.get(id).setNumbersReducers(Integer.parseInt(s));
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
 
     //returns a set<String> with the nodes used in the experiment.
     static Set<String> getUniqueNodesSet(ArrayList<ContainerData> jobOrdered) {

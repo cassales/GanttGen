@@ -123,7 +123,8 @@ public class ContainerData implements Comparable {
             dMine = format.parse(strStartTime);
             dFirst = format.parse(startTimeFirstContainer);
 
-            long diff = (dMine.getTime() - dFirst.getTime())/1000;
+            long diffmil = (dMine.getTime() - dFirst.getTime());
+            long diff = diffmil/1000;
 
             this.startTime = (int)diff;
             this.endTime = startTime + (int)totalTime;

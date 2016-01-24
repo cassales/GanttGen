@@ -37,14 +37,14 @@ public class DrawHelper {
     public static final int DEFAULT_VERTICAL_SPACE = 15;
     public static final int DEFAULT_HORIZONTAL_SPACE = 5;
     public static final int DEFAULT_NAME_SPACE = 80;
-    public static final int DEFAULT_CASE_SPACE = 45;
+    public static int DEFAULT_CASE_SPACE = 45;
 
     //predefined markers size
     public static final int MARKER_SPACE_50 = 20;
     public static final int MARKER_SPACE_25 = 10;
 
     //magic variable
-    public static final int PxS = 3;
+    public static final int PxS = 1;
 
     //predefined offsets
     //used to centralize the time on markers
@@ -53,22 +53,41 @@ public class DrawHelper {
     public static final int OFFSET_TRIPLE = 12;
     public static final int OFFSET_QUADRUPLE = 16;
 
+    //predefined strings (en-us)
+    public static final String LEGENDS_EN_US = "Legends";
+    public static final String MAP_CONT_EN_US = "Map containers";
+    public static final String RED_CONT_EN_US = "Reduce containers";
+    public static final String AM_CONT_EN_US = "Application Master container";
+    public static final String MORE_EN_US = "Taller segments (all types included) and darker tones (only maps included) indicate more containers in execution.";
+
+    //predefined strings (pt-br)
+    public static final String LEGENDS_PT_BR = "Legendas";
+    public static final String MAP_CONT_PT_BR = "containers Map";
+    public static final String RED_CONT_PT_BR = "containers Reduce";
+    public static final String AM_CONT_PT_BR = "container Application Master";
+    public static final String MORE_PT_BR = "A altura (inclui todos tipos) e os tons de cinza (inclui apenas maps) indicam maior quantidade de containers em execução.";
+
     ArrayList<ArrayList<ContainerData>> arrayContainersByNodes;
     ArrayList<ArrayList<ContainerData>> arrayReducersByNodes;
     BufferedImage bufferedImage;
     Graphics2D g2d;
     String scenario;
+    int legendId;
     int width = -1;
     int height = -1;
 
-    DrawHelper(int numberOfGantts, String scenario) {
+    DrawHelper(int numberOfGantts, String scenario, int legendId) {
         this.scenario = scenario;
+        this.legendId = legendId;
         this.DEFAULT_HEIGHT_GANTT = GraphicsProgram.max_containers * 2;
+        this.DEFAULT_CASE_SPACE = 16;//(int) (DEFAULT_HEIGHT_GANTT);
+        if (GraphicsProgram.latest_finish < 775) GraphicsProgram.latest_finish = 775;
 
         // Calculate sizes before constructing the image
         //width = DEFAULT_NAME_SPACE + 4 * DEFAULT_HORIZONTAL_SPACE + (GraphicsProgram.latest_finish * PxS);
-        width = 4 * DEFAULT_HORIZONTAL_SPACE + (GraphicsProgram.latest_finish * PxS);
-        height = 3 * DEFAULT_VERTICAL_SPACE + numberOfGantts * DEFAULT_HEIGHT_GANTT + MARKER_SPACE_50;
+        width = 3 * DEFAULT_HORIZONTAL_SPACE + (GraphicsProgram.latest_finish * PxS);
+        height = 3 * DEFAULT_VERTICAL_SPACE + numberOfGantts * DEFAULT_HEIGHT_GANTT + MARKER_SPACE_50 + 10;
+//        height = 4 * DEFAULT_VERTICAL_SPACE + numberOfGantts * DEFAULT_HEIGHT_GANTT + MARKER_SPACE_50;
 
         // Constructs a BufferedImage of one of the predefined image types.
         bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -78,7 +97,7 @@ public class DrawHelper {
 
         // fill all the image with white
         g2d.setColor(Color.white);
-        g2d.fillRect(0, 0, width, DEFAULT_HEIGHT);
+        g2d.fillRect(0, 0, width, height);
     }
 
     // Save as PNG
@@ -99,6 +118,10 @@ public class DrawHelper {
     public void drawString(String s, float x, float y, float r, float g, float b) {
         g2d.setColor(new Color(r, g, b));
         g2d.drawString(s, x, y);
+    }
+
+    public void resizeFont(float size) {
+        g2d.setFont(g2d.getFont().deriveFont(size));
     }
 
     public void drawRectangle(int x, int y, int w, int h, boolean fill) {
@@ -134,17 +157,26 @@ public class DrawHelper {
 
     public void drawGantt(GanttNode g, int nodeNumber) {
         //the starting point in x and y axis for the chart
-        //int x = DEFAULT_NAME_SPACE + 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * nodeNumber + DEFAULT_VERTICAL_SPACE;
-        int x = 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * nodeNumber + DEFAULT_VERTICAL_SPACE;
+        //int x = DEFAULT_NAME_SPACE + 2 * DEFAULT_HORIZONTAL_SPACE;
+        int x = DEFAULT_HORIZONTAL_SPACE;
+        //int y = DEFAULT_HEIGHT_GANTT * nodeNumber + DEFAULT_VERTICAL_SPACE;
+        int y = DEFAULT_HEIGHT_GANTT * nodeNumber + DEFAULT_VERTICAL_SPACE + DEFAULT_CASE_SPACE;
 
         //draw the resource name before each line
         //this.drawString(g.resource, DEFAULT_HORIZONTAL_SPACE, y + (DEFAULT_HEIGHT_GANTT / 2) + DEFAULT_HEIGHT_GANTT % 2, Color.black);
+        //draw case name
+        if (nodeNumber == 0) {
+            int sizeInit = g2d.getFont().getSize();
+            this.resizeFont((int)(DEFAULT_CASE_SPACE*1.5));
+            this.drawString(scenario, DEFAULT_HORIZONTAL_SPACE, DEFAULT_CASE_SPACE+10, Color.black);
+            this.resizeFont(sizeInit);
+        }
 
         //controls how many segment lines each node will have
         int size = g.segmentLines.size();
         for (int i = 0; i < size; i++) {
             if (i != size - 1) {
-                float c = 1 - ((float) g.activeContainers.get(i) / (float) (GraphicsProgram.max_containers + 1));
+                float c = 1 - ((float) g.activeContainers.get(i) / (float) (GraphicsProgram.max_containers + 3));
                 int startY = y + (int) ((1 - g.activeContainers.get(i) / ((float) GraphicsProgram.max_containers)) * DEFAULT_HEIGHT_GANTT);
                 int heightY = (int) ((g.activeContainers.get(i) / (float) GraphicsProgram.max_containers) * DEFAULT_HEIGHT_GANTT);
                 int startYR = startY - (int) ((g.activeReducers.get(i) / ((float) GraphicsProgram.max_containers)) * DEFAULT_HEIGHT_GANTT);
@@ -189,6 +221,63 @@ public class DrawHelper {
         drawLine(x, y + DEFAULT_HEIGHT_GANTT, x + (GraphicsProgram.latest_finish * PxS), y + DEFAULT_HEIGHT_GANTT, Color.black);
     }
 
+    public void drawLegends() {
+        int shift_legends = 185;
+        //the starting point in x and y axis for the chart
+        int x = DEFAULT_HORIZONTAL_SPACE;
+        int y = DEFAULT_VERTICAL_SPACE;
+
+        //draw title
+        String str = legendId == 0 ? LEGENDS_EN_US : LEGENDS_PT_BR;
+        int sizeInit = g2d.getFont().getSize();
+        this.resizeFont((int)(DEFAULT_CASE_SPACE*1.5));
+        this.drawString(str, x, y*2, Color.black);
+        this.resizeFont(sizeInit);
+        
+        //draw map containers
+        str = legendId == 0 ? MAP_CONT_EN_US : MAP_CONT_PT_BR;
+                this.resizeFont((int)(DEFAULT_CASE_SPACE*1.5)/2);
+        y += DEFAULT_VERTICAL_SPACE*2 + 8;
+        this.drawString(str, x, y, Color.black);
+        
+        x += shift_legends;
+        for (int i = 0; i < 8; i++) {
+            float c = (float)1 - ((float)i / (float)(8+1));
+            this.drawRectangle(x + (i * 20), y - (DEFAULT_HEIGHT_GANTT/2 + 5), 20, DEFAULT_HEIGHT_GANTT, true, new Color(c,c,c));
+            this.drawRectangle(x + (i * 20), y - (DEFAULT_HEIGHT_GANTT/2 + 5), 20, DEFAULT_HEIGHT_GANTT, false, Color.black);
+        }
+        
+        //draw reduce containers
+        x = DEFAULT_HORIZONTAL_SPACE;
+        y += DEFAULT_HEIGHT_GANTT;
+        
+        str = legendId == 0 ? RED_CONT_EN_US : RED_CONT_PT_BR;
+        
+        this.drawString(str, x, y, Color.black);
+        x += shift_legends;
+        this.drawRectangle(x, y - (DEFAULT_HEIGHT_GANTT/2 + 5), 20, DEFAULT_HEIGHT_GANTT, true, Color.green);
+        this.drawRectangle(x, y - (DEFAULT_HEIGHT_GANTT/2 + 5), 20, DEFAULT_HEIGHT_GANTT, false, Color.black);
+        
+        //draw AM conainers
+        x = DEFAULT_HORIZONTAL_SPACE;
+        y += DEFAULT_HEIGHT_GANTT; 
+        
+        str = legendId == 0 ? AM_CONT_EN_US : AM_CONT_PT_BR;
+        
+        this.drawString(str, x, y, Color.black);
+        x += shift_legends;
+        this.drawRectangle(x, y - (DEFAULT_HEIGHT_GANTT/2 + 5), 20, DEFAULT_HEIGHT_GANTT, true, Color.blue);
+        this.drawRectangle(x, y - (DEFAULT_HEIGHT_GANTT/2 + 5), 20, DEFAULT_HEIGHT_GANTT, false, Color.black);
+
+        //draw extra info
+        x = DEFAULT_HORIZONTAL_SPACE;
+        y += DEFAULT_HEIGHT_GANTT;
+        
+        str = legendId == 0 ? MORE_EN_US : MORE_PT_BR;
+        
+        this.drawString(str, x, y, Color.black);
+    }
+
     /**
      * Draw time markers on the chart.
      *
@@ -197,10 +286,10 @@ public class DrawHelper {
     public void drawTimeMarkers(int numberOfNodes) {
         int offset = OFFSET_SINGLE;
         //int x = DEFAULT_NAME_SPACE + 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * (numberOfNodes) + DEFAULT_VERTICAL_SPACE;
-        int x = 2 * DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * (numberOfNodes) + DEFAULT_VERTICAL_SPACE;
-        for (int i = 0; i <= GraphicsProgram.latest_finish; i += 25) {
+        int x = DEFAULT_HORIZONTAL_SPACE, y = DEFAULT_HEIGHT_GANTT * numberOfNodes + DEFAULT_VERTICAL_SPACE + DEFAULT_CASE_SPACE;
+        for (int i = 0; i <= GraphicsProgram.latest_finish; i += 50) {
             String s = Integer.toString(i);
-            if (i == 25) {
+            if (i == 50) {
                 offset = OFFSET_DOUBLE;
             } else if (i == 100) {
                 offset = OFFSET_TRIPLE;
@@ -208,7 +297,7 @@ public class DrawHelper {
                 offset = OFFSET_QUADRUPLE;
             }
 
-            if (i % 50 == 0) {
+            if (i % 100 == 0) {
                 drawLine(x + i * PxS, y, x + i * PxS, y + MARKER_SPACE_50, Color.black);
                 drawString(s, x + i * PxS - offset, y + MARKER_SPACE_50 + DEFAULT_VERTICAL_SPACE, Color.black);
             } else {

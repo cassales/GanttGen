@@ -22,6 +22,7 @@ public class GraphicsProgram {
 
     public static boolean verbose = false;
     public static boolean compose = false;
+    public static boolean legends = true;
     public static int latest_finish = 0;
     public static int max_containers = 0;
 
@@ -81,6 +82,12 @@ public class GraphicsProgram {
         //sort by job name
         Collections.sort(allJobsOrdered);
 
+        //get number of reducers from file
+        Parser.parseConsole(allJobsOrdered);
+        for (Job j : allJobsOrdered) {
+            j.organizeContainers();
+        }
+
         //get the latest container to finish among all jobs (will SEARCH ONLY among the ones being generated)
         //run through each array to discover the container with the latest finish time
         //and assign smallest multiple of 10 greater than lf
@@ -111,7 +118,7 @@ public class GraphicsProgram {
             System.out.println("Application Master on Node: " + j.getAppMaster().getNode());
             j.printSynopsis();
 
-            DrawHelper dH = new DrawHelper(j.getNodeSeparatedOrderedContainers().size(), j.getName());
+            DrawHelper dH = new DrawHelper(j.getNodeSeparatedOrderedContainers().size(), j.getName(), 0);
             for (GanttNode gn : j.getNodes()) {
                 dH.drawGantt(gn, j.getNodes().indexOf(gn));
             }
@@ -131,6 +138,19 @@ public class GraphicsProgram {
                 abi.add(DrawHelper.loadImage(dir.getPath() + "/" + j.getName() + ".png"));
                 height += abi.get(abi.size() - 1).getHeight() + 1;
             }
+            //generate subtitles
+            if (legends) {
+                DrawHelper dH = new DrawHelper(2, "legen", 1);
+                dH.drawLegends();
+                try {
+                    dH.save();
+                } catch (IOException ex) {
+                    Logger.getLogger(DrawHelper.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                abi.add(DrawHelper.loadImage(dir.getPath() + "/" + dH.scenario + ".png"));
+                height += abi.get(abi.size() - 1).getHeight() + 1;
+            }
+            //generate and save composed image
             BufferedImage composedBI = new BufferedImage(abi.get(0).getWidth(), height, BufferedImage.TYPE_INT_RGB);
             height = 0;
             for (BufferedImage b : abi) {
@@ -158,16 +178,11 @@ public class GraphicsProgram {
                     System.out.println("Missing argument! Please insert files after -g.\n");
                     error = true;
                     break;
-                case "-r":
-                    System.out.println("Missing argument! Please insert the number after -r.\n");
-                    error = true;
-                    break;
                 default:
                     System.out.println("Unknown option " + argS[0] + ".");
                     System.out.println("-v verbose active (will print status of nodes in each segment)");
                     System.out.println("-c compose active (will create an image containing all images selected)");
                     System.out.println("-g [list of files]");
-                    System.out.println("-r number_of_reducers");
                     error = true;
                     break;
             }
@@ -190,22 +205,14 @@ public class GraphicsProgram {
                         mGAppeared = true;
                         minusR = false;
                         break;
-                    case "-r":
-                        minusG = false;
-                        minusR = true;
-                        break;
                     default:
                         if (minusG) {
                             argFiles.add(s);
-                        } else if (minusR) {
-                            redNumber = Integer.parseInt(s);
-                            minusR = false;
                         } else {
                             System.out.println("Unknown option " + s + ".");
                             System.out.println("-v verbose active (will print status of nodes in each segment)");
                             System.out.println("-c compose active (will create an image containing all images selected)");
                             System.out.println("-g [list of files]");
-                            System.out.println("-r number_of_reducers");
                             error = true;
                         }
                         break;
